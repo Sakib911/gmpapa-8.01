@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
+import {StoreDetails} from "./StoreDetails";
 import {
   Table,
   TableBody,
@@ -32,6 +34,7 @@ export default function ResellerList({ status }: ResellerListProps) {
   const [resellers, setResellers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const [selectedStore, setSelectedStore] = useState<any>(null);
 
   useEffect(() => {
     fetchResellers();
@@ -51,6 +54,21 @@ export default function ResellerList({ status }: ResellerListProps) {
       });
     } finally {
       setLoading(false);
+    }
+  };
+  const handleViewStore = async (resellerId: string) => {
+    try {
+      const response = await fetch(`/api/admin/resellers/${resellerId}/store`);
+      if (!response.ok) throw new Error('Failed to fetch store details');
+      const data = await response.json();
+      setSelectedStore(data);
+    } catch (error) {
+      console.error('Failed to fetch store details:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load store details',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -205,6 +223,7 @@ export default function ResellerList({ status }: ResellerListProps) {
                         </DropdownMenuItem>
                       )}
                     </>
+                    
                   )}
                 </DropdownMenuContent>
               </DropdownMenu>
@@ -212,6 +231,8 @@ export default function ResellerList({ status }: ResellerListProps) {
           </TableRow>
         ))}
       </TableBody>
+      
     </Table>
+    
   );
 }

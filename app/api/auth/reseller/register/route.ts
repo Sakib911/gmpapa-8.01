@@ -8,7 +8,7 @@ import dbConnect from '@/lib/db/mongodb';
 import bcrypt from 'bcryptjs';
 import { Reseller } from '@/lib/models/reseller.model';
 
-const REGISTRATION_FEE = 1; // BDT
+const REGISTRATION_FEE = 1.02; // BDT
 
 export async function POST(req: NextRequest) {
   try {
@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     // Generate subdomain if using subdomain option
     let subdomain;
     if (data.domainType === 'subdomain') {
-      subdomain = await generateUniqueSubdomain(data.subdomainPrefix || data.businessName);
+      subdomain = await generateUniqueSubdomain(data.subdomainPrefix || data.storeName);
     }
 
     // Hash password
@@ -80,18 +80,20 @@ export async function POST(req: NextRequest) {
         domainSettings: {
           type: data.domainType,
           subdomain: subdomain,
-          customDomain: data.customDomain,
+          customDomain: data.customDomain || '/',
         },
         settings: data.settings
       },
       description: 'Reseller Registration Fee'
     });
+    console.log(data)
 
     return Response.json({
       message: 'Registration initiated',
       paymentId: paymentResult.paymentId,
       bkashURL: paymentResult.bkashURL
     });
+    
   } catch (error) {
     console.error('Reseller registration error:', error);
     return Response.json(

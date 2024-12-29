@@ -6,9 +6,10 @@ export interface IStore extends Document {
   description?: string;
   logo?: string;
   banner?: string;
+  storeURL:string;
   domainSettings: {
     subdomain: string;
-    customDomain?: string;
+    customDomain: string;
     customDomainVerified?: boolean;
     dnsSettings?: {
       aRecord: string;
@@ -63,6 +64,7 @@ const StoreSchema = new Schema<IStore>({
   description: String,
   logo: String,
   banner: String,
+  storeURL:String,
   domainSettings: {
     subdomain: { 
       type: String,
@@ -73,6 +75,7 @@ const StoreSchema = new Schema<IStore>({
     },
     customDomain: {
       type: String,
+      required: true,
       trim: true,
       lowercase: true,
       sparse: true,

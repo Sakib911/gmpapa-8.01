@@ -2,29 +2,46 @@ import { User } from '@/lib/models/user.model';
 import { Store } from '@/lib/models/store.model';
 import { generateUniqueSubdomain } from '@/lib/utils/domain';
 import bcrypt from 'bcryptjs';
-import { Reseller } from '@/lib/models/reseller.model'; // Import the reseller model
+import { Reseller } from '@/lib/models/reseller.model';
 
 export async function handleResellerRegistration(payment: any, transactionId: string, session: any) {
   try {
     const registrationData = payment.metadata.registrationData;
+    console.log(registrationData)
+    console.log(registrationData.domainSettings.type)
     if (!registrationData) {
       throw new Error('Registration data not found');
     }
-    let subdomain;
-   
-    if(registrationData.domainType == 'custom'){
-      subdomain = registrationData.customDomain
-      registrationData.customDomainVerified = true;
-    }
-    else{
-      subdomain = await generateUniqueSubdomain(registrationData.businessName);
-    }
-    
-    // Generate unique subdomain from business name
-    
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(registrationData.password, 12);
+    // Determine domain settings based on domain type
+    let domainSettings: any = {};
+    let storeURL: any;
+    
+    if (registrationData.domainType === 'subdomain') {
+      console.log('I m subdomain')
+      
+      // For custom domain
+      domainSettings = {
+        subdomain: registrationData.subdomainPrefix || await generateUniqueSubdomain(registrationData.businessName),
+        customDomain: '/',
+        domainType:registrationData.domainType,
+        customDomainVerified: false
+        
+      };
+      storeURL = domainSettings.subdomain
+    } else {
+      console.log('i m custom domain')
+      // For subdomain
+      domainSettings = {
+        customDomain: registrationData.domainSettings.customDomain,
+        domainType:registrationData.domainType,
+        customDomainVerified: false, // Requires verification
+        subdomain: await generateUniqueSubdomain('store') // Fallback subdomain
+      };
+      storeURL = domainSettings.customDomain
+    }
+
+    
 
     // Create the user document
     const user = new User({
@@ -58,7 +75,7 @@ export async function handleResellerRegistration(payment: any, transactionId: st
 
     await user.save({ session });
 
-    // Create reseller document in the `resellers` collection
+    // Create reseller document
     const reseller = new Reseller({
       userId: user._id,
       businessName: registrationData.businessName,
@@ -81,15 +98,12 @@ export async function handleResellerRegistration(payment: any, transactionId: st
 
     await reseller.save({ session });
 
-    // Create store with the generated subdomain
+    // Create store with domain settings
     const store = new Store({
-      reseller: reseller._id, // Reference the reseller instead of the user directly
-      name: registrationData.businessName,
-      domainSettings: {
-        subdomain,
-        
-      },
-      customDomainVerified:registrationData.customDomainVerified,
+      reseller: reseller._id,
+      name: registrationData.storeName,
+      storeURL,
+      domainSettings,
       settings: {
         defaultMarkup: 20,
         minimumMarkup: 10,
@@ -117,7 +131,7 @@ export async function handleResellerRegistration(payment: any, transactionId: st
     payment.transactionId = transactionId;
     await payment.save({ session });
 
-    return user._id; // You may also return the reseller ID if needed
+    return user._id;
   } catch (error) {
     console.error('Error handling reseller registration:', error);
     throw error;

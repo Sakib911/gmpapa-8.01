@@ -1,7 +1,56 @@
-// Previous imports remain the same...
+'use client';
+
+import { useState, useEffect } from 'react';
+import { Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { Card } from '@/components/ui/card';
+import { Loader2 } from 'lucide-react';
+import { formatCurrency } from '@/lib/utils';
+
+interface OverviewData {
+  name: string;
+  revenue: number;
+  orders: number;
+}
 
 export function Overview() {
-  // Previous code remains the same...
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState<OverviewData[]>([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchOverviewData();
+  }, []);
+
+  const fetchOverviewData = async () => {
+    try {
+      const response = await fetch('/api/admin/analytics/overview');
+      if (!response.ok) throw new Error('Failed to fetch overview data');
+      
+      const result = await response.json();
+      setData(result.data);
+    } catch (error) {
+      console.error('Error fetching overview data:', error);
+      setError('Failed to load overview data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[350px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-[350px]">
+        <p className="text-destructive">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <ResponsiveContainer width="100%" height={350}>
@@ -18,7 +67,7 @@ export function Overview() {
           fontSize={12}
           tickLine={false}
           axisLine={false}
-          tickFormatter={(value) => `৳${value}`}
+          tickFormatter={(value) => `$${value}`}
         />
         <Tooltip
           content={({ active, payload }) => {
@@ -29,7 +78,7 @@ export function Overview() {
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-primary" />
                       <span className="text-sm text-gray-300">Revenue:</span>
-                      <span className="font-bold">{formatCurrency(payload[0].value as number)}</span>
+                      <span className="font-bold">{formatCurrency(payload[0].value as number, 'USD')}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className="w-2 h-2 rounded-full bg-blue-500" />
@@ -43,7 +92,18 @@ export function Overview() {
             return null;
           }}
         />
-        {/* Rest of the component remains the same... */}
+        <Line
+          type="monotone"
+          dataKey="revenue"
+          stroke="hsl(var(--primary))"
+          strokeWidth={2}
+        />
+        <Line
+          type="monotone"
+          dataKey="orders"
+          stroke="#3b82f6"
+          strokeWidth={2}
+        />
       </LineChart>
     </ResponsiveContainer>
   );
