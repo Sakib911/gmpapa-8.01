@@ -17,7 +17,7 @@ export async function handleResellerRegistration(payment: any, transactionId: st
     let domainSettings: any = {};
     let storeURL: any;
     
-    if (registrationData.domainType === 'subdomain') {
+    if (registrationData.domainSettings.type == 'subdomain') {
       console.log('I m subdomain')
       
       // For custom domain

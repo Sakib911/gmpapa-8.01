@@ -1,20 +1,35 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 
-export function withDynamicRoute(handler: (req: NextRequest) => Promise<Response>) {
-  return async function(req: NextRequest) {
-    // Force dynamic response
-    const response = await handler(req);
-    
-    // Add cache control headers
-    const headers = new Headers(response.headers);
-    headers.set('Cache-Control', 'no-store, must-revalidate');
-    headers.set('x-middleware-cache', 'no-cache');
+type HandlerFunction = (
+  req: NextRequest,
+  session: any,
+  context?: { params: Record<string, string> }
+) => Promise<Response>;
 
-    return new NextResponse(response.body, {
-      status: response.status,
-      statusText: response.statusText,
-      headers
-    });
+export function withAuth(handler: HandlerFunction) {
+  return async function(
+    req: NextRequest,
+    context?: { params: Record<string, string> }
+  ) {
+    try {
+      const session = await getServerSession(authOptions);
+      
+      if (!session?.user) {
+        return NextResponse.json(
+          { error: 'Unauthorized' },
+          { status: 401 }
+        );
+      }
+
+      return handler(req, session, context);
+    } catch (error) {
+      console.error('API error:', error);
+      return NextResponse.json(
+        { error: 'Internal server error' },
+        { status: 500 }
+      );
+    }
   };
 }

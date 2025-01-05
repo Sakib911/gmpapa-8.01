@@ -25,6 +25,7 @@ import { MoreHorizontal, CheckCircle2, XCircle, Wallet, ExternalLink } from 'luc
 import { formatCurrency } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import { useStores } from '@/hooks/use-stores';
 
 interface ResellerListProps {
   status: 'active' | 'pending';
@@ -35,9 +36,12 @@ export default function ResellerList({ status }: ResellerListProps) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const [selectedStore, setSelectedStore] = useState<any>(null);
+// Fetch all stores
+
 
   useEffect(() => {
     fetchResellers();
+  
   }, [status]);
 
   const fetchResellers = async () => {
@@ -58,9 +62,10 @@ export default function ResellerList({ status }: ResellerListProps) {
   };
   const handleViewStore = async (resellerId: string) => {
     try {
-      const response = await fetch(`/api/admin/resellers/${resellerId}/store`);
+      const response = await fetch(`/api/stores/${resellerId}`);
       if (!response.ok) throw new Error('Failed to fetch store details');
       const data = await response.json();
+      console.log(data)
       setSelectedStore(data);
     } catch (error) {
       console.error('Failed to fetch store details:', error);
@@ -166,7 +171,7 @@ export default function ResellerList({ status }: ResellerListProps) {
                 </span>
               </div>
             </TableCell>
-            <TableCell>{reseller.domain || 'Not set'}</TableCell>
+            <TableCell>{selectedStore.storeURL || 'Not set'}</TableCell>
             <TableCell>
               {formatCurrency(reseller.wallet?.balance || 0, reseller.wallet?.currency || 'USD')}
             </TableCell>
